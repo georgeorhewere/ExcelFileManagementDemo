@@ -37,7 +37,7 @@ namespace ExcelFileManagementDemo
             ProcessStatus status = new ProcessStatus();
             try
             {
-                using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
+                using (var stream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite))
                 {
                     using (var reader = ExcelReaderFactory.CreateReader(stream))
                     {
@@ -164,59 +164,129 @@ namespace ExcelFileManagementDemo
         {
             if(studentData != null)
             {
-                Hashtable studentCache = new Hashtable();
+                //Hashtable studentCache = new Hashtable();
                 var sheetCount = studentData.Tables.Count;
                 for(var index = 0; index < sheetCount; index++)
                 {
                     var currentSheet = studentData.Tables[index];
+                    currentSheet.Columns.Add("Error", typeof(string));
+                    
                     // Display row contents
-                    using(var reader = studentData.CreateDataReader())
+                    using(var reader = currentSheet.CreateDataReader())
                     {
+                        var rowCount = 0;                       
+                      
                         while (reader.Read())
-                        {   
-                            //cache body
-                            var SSN = reader.GetValue(reader.GetOrdinal(FileHeaderDefinitions.StudentSSN));
-                            var firstName = reader.GetValue(reader.GetOrdinal(FileHeaderDefinitions.FirstName));
+                        {
+                            //validate fields                                                    
+                            List<string> recordErrors = new List<string>();
 
-                            Console.WriteLine($"Student SSN for  {firstName } is { SSN }");
-                            if (string.IsNullOrEmpty((SSN as string)))
+                            //required fields
+                            ValidateRequiredFields(reader, recordErrors);
+
+                            var cacheItem = GetStudentCacheDTO(reader);
+
+                            string Student_SSN = getStudentSSN(currentSheet, reader);                           
+
+                            ////Add SSN, record to cache and flag if record has duplicate  
+
+                            var duplicateQuery = $"[{FileHeaderDefinitions.StudentSSN}] = '{Student_SSN}' AND FirstName <> '{cacheItem.FirstName}' AND LastName <> '{cacheItem.LastName}' ";
+                            var hasDuplicateSSN = currentSheet.Select(duplicateQuery).Any();
+
+                            if (hasDuplicateSSN)
                             {
-                                // generate SSN
-                                var random = new Random();
-                                var tempSSN = $"{random.Next(1, 999)}-{random.Next(1, 99)}-{random.Next(1, 9999)}";
-                                
-                                //chceck if in cache                                
-                                while (studentCache.ContainsKey(tempSSN))
-                                {
-                                    tempSSN = $"{random.Next(1, 999)}-{random.Next(1, 99)}-{random.Next(1, 9999)}";
-                                }
-
-                                SSN = tempSSN;
+                                recordErrors.Add($"Duplicate Student Social Security Number");
                             }
 
-                            
+                            // check that same Name,DOB and grade do not exist in the same school
 
-                            //Add SSN, record to cache and flag if record has duplicate
-                            studentCache.Add(SSN,  firstName );
-                            
 
-                            
-                           
 
+
+                            //add errors to new column
+                            if (recordErrors.Any())
+                            {
+                                // Console.WriteLine($"Error :  { string.Join(", ", recordErrors) } ");
+                                var row = currentSheet.Rows[rowCount];
+                                row["Error"] = string.Join(",", recordErrors);
+                            }
+                            rowCount++;
                         }
                     }
+                    currentSheet.AcceptChanges();
+                    
                 }
 
                 Console.WriteLine($"");
                 Console.WriteLine($"Cache Items");
-                foreach (DictionaryEntry item in studentCache)
+                foreach (DataRow item in studentData.Tables[0].Rows)
                 {
-                    Console.WriteLine($"{ item.Key } : { item.Value} ");
+                    Console.WriteLine($" SSN : {item[FileHeaderDefinitions.StudentSSN] }, Name : {item[FileHeaderDefinitions.FirstName] } { item[FileHeaderDefinitions.LastName]}, Errors { item["Error"]}  ");
                 }
+
+
             }
             return false;
         }
 
+        private string getStudentSSN(DataTable currentSheet, DataTableReader reader)
+        {
+            string Student_SSN;
+            if (reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.StudentSSN)))
+            {
+                // generate SSN
+                var random = new Random();
+                Student_SSN = $"{random.Next(1, 999)}-{random.Next(1, 99)}-{random.Next(1, 9999)}";
+                //chceck if in cache                                
+                while (currentSheet.Select($"[{FileHeaderDefinitions.StudentSSN}] = '{Student_SSN}'").Any())
+                {
+                    Student_SSN = $"{random.Next(1, 999)}-{random.Next(1, 99)}-{random.Next(1, 9999)}";
+                }
+            }
+            else
+            {
+                Student_SSN = reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.StudentSSN));
+            }
 
+            return Student_SSN;
+        }
+
+        private StudentCacheDTO GetStudentCacheDTO(DataTableReader reader)
+        {
+            var cacheItem = new StudentCacheDTO();
+
+            cacheItem.FirstName = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.FirstName)) ? null : reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.FirstName));
+            cacheItem.LastName = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.LastName)) ? null : reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.LastName));
+            cacheItem.DOB = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.DOB)) ? (DateTime?) null : reader.GetDateTime(reader.GetOrdinal(FileHeaderDefinitions.DOB));
+            cacheItem.SchoolCode = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.SchoolCode)) ? null : reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.SchoolCode));
+            cacheItem.SchoolName = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.SchoolName)) ? null : reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.SchoolName));
+           // cacheItem.Grade = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.Grade)) ? (int?)null : reader.GetInt32(reader.GetOrdinal(FileHeaderDefinitions.Grade));
+           
+            return cacheItem;
+        }
+
+        private void ValidateRequiredFields(DataTableReader reader, List<string> recordErrors)
+        {
+            if (reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.FirstName)))
+            {
+                recordErrors.Add($"Missing First Name");
+            }
+            if (reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.LastName)))
+            {
+                recordErrors.Add($" Missing Last Name");
+            }
+            if (reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.SchoolCode)))
+            {
+                recordErrors.Add($" Missing School Code");
+            }
+            if (reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.SchoolName)))
+            {
+                recordErrors.Add($"Missing School Name");
+            }
+            if (reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.DOB)))
+            {
+                recordErrors.Add($"Missing Date of Birth");
+            }
+        }
     }
 }
