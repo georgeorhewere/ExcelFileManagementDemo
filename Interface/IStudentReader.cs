@@ -10,7 +10,7 @@ namespace ExcelFileManagementDemo.Interface
     public interface IStudentReader
     {
         ProcessStatus OpenDataFeed(string connection);
-        ProcessStatus VerifyInputData(string connection);
+        ProcessStatus VerifyInputData();
 
     }
 }

@@ -3,6 +3,7 @@ using ExcelFileManagementDemo.Common;
 using ExcelFileManagementDemo.Interface;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -39,39 +40,11 @@ namespace ExcelFileManagementDemo
                     using (var reader = ExcelReaderFactory.CreateReader(stream))
                     {
                         // Use the AsDataSet extension method
-                        var result = reader.AsDataSet(GetExcelDataSetConfig());
-                        int count = result.Tables.Count;
-                        bool hasValidCoumnSet = true;
+                        var result = reader.AsDataSet(GetExcelDataSetConfig());                       
+                      
                         List<string> badSheets = new List<string>();                        
 
-                        for(int sheetIndex = 0; sheetIndex < count; sheetIndex++)
-                        {
-                            var excelSheet = result.Tables[sheetIndex];
-                            Console.WriteLine($"sheets {excelSheet.TableName}");
-                            // validate column Headers 
-                            int columnCount = excelSheet.Columns.Count;
-                            var sheetColumns = excelSheet.Columns;
-                            List<string> badColumns = new List<string>();
-
-                            for (int col = 0; col < columnCount; col++)
-                            {
-                                
-                                if (!FileHeaderDefinitions.ColumnDefinitions().Contains(sheetColumns[col].ColumnName))
-                                {   
-                                    badColumns.Add(sheetColumns[col].ColumnName);
-                                    hasValidCoumnSet = false;
-                                }
-                            }
-
-                            if (badColumns.Any())
-                            {
-                                badSheets.Add($"Sheet : {excelSheet.TableName}, Columns : { string.Join(" ,",badColumns) } ");
-                            }
-                            var rowCount = excelSheet.Rows.Count;
-                            Console.WriteLine($"number of rows : {rowCount}");
-                        }
-
-                        if (hasValidCoumnSet)
+                        if (VerifyColumnHeaders(result, badSheets))
                         {
                             status.success = true;
                             status.message = $"File was opened and in the correct format";
@@ -79,7 +52,7 @@ namespace ExcelFileManagementDemo
                         else
                         {
                             status.success = false;
-                            status.message = $"File was opened but one or more sheets have invalid coumns. { string.Join(", ",badSheets)}";
+                            status.message = $"File was opened but one or more sheets have invalid coumns. { string.Join(", ", badSheets)}";
                             status.data = badSheets;
                         }
 
@@ -94,6 +67,42 @@ namespace ExcelFileManagementDemo
             
             return status;
         }
+
+        private bool VerifyColumnHeaders(DataSet result, List<string> badSheets)
+        {
+            bool hasValidCoumnSet = true;
+            int count = result.Tables.Count;
+
+            for (int sheetIndex = 0; sheetIndex < count; sheetIndex++)
+            {
+                var excelSheet = result.Tables[sheetIndex];
+                Console.WriteLine($"sheets {excelSheet.TableName}");
+                // validate column Headers 
+                int columnCount = excelSheet.Columns.Count;
+                var sheetColumns = excelSheet.Columns;
+                List<string> badColumns = new List<string>();
+
+                for (int col = 0; col < columnCount; col++)
+                {
+
+                    if (!FileHeaderDefinitions.ColumnDefinitions().Contains(sheetColumns[col].ColumnName))
+                    {
+                        badColumns.Add(sheetColumns[col].ColumnName);
+                        hasValidCoumnSet = false;
+                    }
+                }
+
+                if (badColumns.Any())
+                {
+                    badSheets.Add($"Sheet : {excelSheet.TableName}, Columns : { string.Join(" ,", badColumns) } ");
+                }
+                var rowCount = excelSheet.Rows.Count;
+                Console.WriteLine($"number of rows : {rowCount}");
+            }
+
+            return hasValidCoumnSet;
+        }
+
         private ExcelDataSetConfiguration GetExcelDataSetConfig()
         {
             return new ExcelDataSetConfiguration()
@@ -143,7 +152,7 @@ namespace ExcelFileManagementDemo
 
         }
 
-        public ProcessStatus VerifyInputData(string connection)
+        public ProcessStatus VerifyInputData()
         {
             throw new NotImplementedException();
         }
