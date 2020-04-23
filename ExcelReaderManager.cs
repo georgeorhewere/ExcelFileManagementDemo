@@ -2,6 +2,7 @@
 using ExcelFileManagementDemo.Common;
 using ExcelFileManagementDemo.Interface;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -14,6 +15,7 @@ namespace ExcelFileManagementDemo
     public class ExcelReaderManager :IStudentReader
     {
         private string filePath;
+        private DataSet studentData;
 
         public ExcelReaderManager()
         {
@@ -40,11 +42,11 @@ namespace ExcelFileManagementDemo
                     using (var reader = ExcelReaderFactory.CreateReader(stream))
                     {
                         // Use the AsDataSet extension method
-                        var result = reader.AsDataSet(GetExcelDataSetConfig());                       
+                        studentData = reader.AsDataSet(GetExcelDataSetConfig());                       
                       
                         List<string> badSheets = new List<string>();                        
 
-                        if (VerifyColumnHeaders(result, badSheets))
+                        if (VerifyColumnHeaders(studentData, badSheets))
                         {
                             status.success = true;
                             status.message = $"File was opened and in the correct format";
@@ -55,8 +57,6 @@ namespace ExcelFileManagementDemo
                             status.message = $"File was opened but one or more sheets have invalid coumns. { string.Join(", ", badSheets)}";
                             status.data = badSheets;
                         }
-
-
                     }
                 }
             }
@@ -68,15 +68,15 @@ namespace ExcelFileManagementDemo
             return status;
         }
 
-        private bool VerifyColumnHeaders(DataSet result, List<string> badSheets)
+        private bool VerifyColumnHeaders(DataSet importDataset, List<string> badSheets)
         {
             bool hasValidCoumnSet = true;
-            int count = result.Tables.Count;
+            int count = importDataset.Tables.Count;
 
             for (int sheetIndex = 0; sheetIndex < count; sheetIndex++)
             {
-                var excelSheet = result.Tables[sheetIndex];
-                Console.WriteLine($"sheets {excelSheet.TableName}");
+                var excelSheet = importDataset.Tables[sheetIndex];
+                //Console.WriteLine($"sheets {excelSheet.TableName}");
                 // validate column Headers 
                 int columnCount = excelSheet.Columns.Count;
                 var sheetColumns = excelSheet.Columns;
@@ -84,7 +84,6 @@ namespace ExcelFileManagementDemo
 
                 for (int col = 0; col < columnCount; col++)
                 {
-
                     if (!FileHeaderDefinitions.ColumnDefinitions().Contains(sheetColumns[col].ColumnName))
                     {
                         badColumns.Add(sheetColumns[col].ColumnName);
@@ -99,7 +98,6 @@ namespace ExcelFileManagementDemo
                 var rowCount = excelSheet.Rows.Count;
                 Console.WriteLine($"number of rows : {rowCount}");
             }
-
             return hasValidCoumnSet;
         }
 
@@ -154,7 +152,71 @@ namespace ExcelFileManagementDemo
 
         public ProcessStatus VerifyInputData()
         {
-            throw new NotImplementedException();
+            ProcessStatus status = new ProcessStatus();
+            //check for duplicate SSN
+            var ContainsDuplicates = HasDuplicateStudentSSN();
+            // Check for Same First,Last, DOB and Grade in the same school
+            return status;
         }
+
+
+        private bool HasDuplicateStudentSSN()
+        {
+            if(studentData != null)
+            {
+                Hashtable studentCache = new Hashtable();
+                var sheetCount = studentData.Tables.Count;
+                for(var index = 0; index < sheetCount; index++)
+                {
+                    var currentSheet = studentData.Tables[index];
+                    // Display row contents
+                    using(var reader = studentData.CreateDataReader())
+                    {
+                        while (reader.Read())
+                        {   
+                            //cache body
+                            var SSN = reader.GetValue(reader.GetOrdinal(FileHeaderDefinitions.StudentSSN));
+                            var firstName = reader.GetValue(reader.GetOrdinal(FileHeaderDefinitions.FirstName));
+
+                            Console.WriteLine($"Student SSN for  {firstName } is { SSN }");
+                            if (string.IsNullOrEmpty((SSN as string)))
+                            {
+                                // generate SSN
+                                var random = new Random();
+                                var tempSSN = $"{random.Next(1, 999)}-{random.Next(1, 99)}-{random.Next(1, 9999)}";
+                                
+                                //chceck if in cache                                
+                                while (studentCache.ContainsKey(tempSSN))
+                                {
+                                    tempSSN = $"{random.Next(1, 999)}-{random.Next(1, 99)}-{random.Next(1, 9999)}";
+                                }
+
+                                SSN = tempSSN;
+                            }
+
+                            
+
+                            //Add SSN, record to cache and flag if record has duplicate
+                            studentCache.Add(SSN,  firstName );
+                            
+
+                            
+                           
+
+                        }
+                    }
+                }
+
+                Console.WriteLine($"");
+                Console.WriteLine($"Cache Items");
+                foreach (DictionaryEntry item in studentCache)
+                {
+                    Console.WriteLine($"{ item.Key } : { item.Value} ");
+                }
+            }
+            return false;
+        }
+
+
     }
 }

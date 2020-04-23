@@ -19,6 +19,10 @@ namespace ExcelFileManagementDemo
             //manager.OpenExcel(inputFile);
            var fileStateInfo = $"Status: { status.success } Message:{ status.message }";
            Console.WriteLine(fileStateInfo);
+            if (status.success)
+            {
+                manager.VerifyInputData();
+            }
             
 
             Console.ReadLine();
