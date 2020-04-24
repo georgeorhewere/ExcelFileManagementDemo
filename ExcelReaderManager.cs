@@ -175,8 +175,7 @@ namespace ExcelFileManagementDemo
                     // Display row contents
                     using(var reader = currentSheet.CreateDataReader())
                     {
-                        var rowCount = 0;                     
-                      
+                        var rowCount = 0;  
                         while (reader.Read())
                         {
                             //validate fields                                                    
@@ -203,7 +202,6 @@ namespace ExcelFileManagementDemo
                                 }
                             }
 
-
                             string Student_SSN = getStudentSSN(currentSheet, reader,cacheItem,recordErrors);                          
 
                             ////Add SSN, record to cache and flag if record has duplicate  
@@ -220,10 +218,6 @@ namespace ExcelFileManagementDemo
 
                             if(IsDuplicateStudentId)
                                 recordErrors.Add($"This student id is associated with another student in this school : {cacheItem.SchoolName} ");
-
-
-
-
 
                             //add errors to new column
                             if (recordErrors.Any())
@@ -242,7 +236,9 @@ namespace ExcelFileManagementDemo
                 Console.WriteLine($"Cache Items");
                 foreach (DataRow item in studentData.Tables[0].Rows)
                 {
-                    Console.WriteLine($" SSN : {item[FileHeaderDefinitions.StudentSSN] }, Name : {item[FileHeaderDefinitions.FirstName] } { item[FileHeaderDefinitions.LastName]}, Errors { item["Error"]}  ");
+                    Console.WriteLine($"SSN : {item[FileHeaderDefinitions.StudentSSN] }, Name : {item[FileHeaderDefinitions.FirstName] } { item[FileHeaderDefinitions.LastName]}");
+                    Console.WriteLine($"Errors { item["Error"]}  ");
+                    Console.WriteLine($"");
                 }
 
                 var hasErrors = $"Error IS NOT NULL";
