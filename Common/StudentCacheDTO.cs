@@ -11,9 +11,10 @@ namespace ExcelFileManagementDemo.Common
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public DateTime? DOB { get; set; }
-        public int? Grade { get; set; }
+        public double? Grade { get; set; }
         public string SchoolCode { get; set; }
         public string SchoolName { get; set; }
+        public string StudentID { get; set; }
 
     }
 }

@@ -16,10 +16,11 @@ namespace ExcelFileManagementDemo
     {
         private string filePath;
         private DataSet studentData;
+        private Hashtable schoolCache;
 
         public ExcelReaderManager()
         {
-           
+            schoolCache = new Hashtable();
         }
 
         public ProcessStatus OpenDataFeed(string connection)
@@ -154,17 +155,17 @@ namespace ExcelFileManagementDemo
         {
             ProcessStatus status = new ProcessStatus();
             //check for duplicate SSN
-            var ContainsDuplicates = HasDuplicateStudentSSN();
+            status.success = HasFlaggedErrors();
+
             // Check for Same First,Last, DOB and Grade in the same school
             return status;
         }
 
 
-        private bool HasDuplicateStudentSSN()
+        private bool HasFlaggedErrors()
         {
             if(studentData != null)
             {
-                //Hashtable studentCache = new Hashtable();
                 var sheetCount = studentData.Tables.Count;
                 for(var index = 0; index < sheetCount; index++)
                 {
@@ -174,31 +175,52 @@ namespace ExcelFileManagementDemo
                     // Display row contents
                     using(var reader = currentSheet.CreateDataReader())
                     {
-                        var rowCount = 0;                       
+                        var rowCount = 0;                     
                       
                         while (reader.Read())
                         {
                             //validate fields                                                    
                             List<string> recordErrors = new List<string>();
-
                             //required fields
                             ValidateRequiredFields(reader, recordErrors);
 
                             var cacheItem = GetStudentCacheDTO(reader);
 
-                            string Student_SSN = getStudentSSN(currentSheet, reader);                           
+                            //update school cache
+                            if(cacheItem.SchoolCode != null && cacheItem.SchoolName != null)
+                            {
+                                if (!schoolCache.ContainsKey(cacheItem.SchoolCode))
+                                {
+                                    schoolCache.Add(cacheItem.SchoolCode, cacheItem.SchoolName);
+                                }
+                                else
+                                {
+                                    // same school code and different school name
+                                    if(!(schoolCache[cacheItem.SchoolCode] as string).Equals(cacheItem.SchoolName))
+                                    {
+                                        recordErrors.Add($"There is a different school name associated with this school code");
+                                    }
+                                }
+                            }
+
+
+                            string Student_SSN = getStudentSSN(currentSheet, reader,cacheItem,recordErrors);                          
 
                             ////Add SSN, record to cache and flag if record has duplicate  
-
-                            var duplicateQuery = $"[{FileHeaderDefinitions.StudentSSN}] = '{Student_SSN}' AND FirstName <> '{cacheItem.FirstName}' AND LastName <> '{cacheItem.LastName}' ";
-                            var hasDuplicateSSN = currentSheet.Select(duplicateQuery).Any();
+                            var duplicateQuery = $"[{FileHeaderDefinitions.StudentSSN}] = '{Student_SSN}'";
+                            var hasDuplicateSSN = currentSheet.Select(duplicateQuery).Count() > 1;
 
                             if (hasDuplicateSSN)
                             {
-                                recordErrors.Add($"Duplicate Student Social Security Number");
+                                recordErrors.Add($"Another student exists with the same social security number");
                             }
 
-                            // check that same Name,DOB and grade do not exist in the same school
+                            var duplicateStudentIdQuery = $"[{FileHeaderDefinitions.StudentID}] = '{cacheItem.StudentID}' AND [{FileHeaderDefinitions.SchoolCode}] = '{cacheItem.SchoolCode}'";
+                            var IsDuplicateStudentId = currentSheet.Select(duplicateStudentIdQuery).Count() > 1;
+
+                            if(IsDuplicateStudentId)
+                                recordErrors.Add($"This student id is associated with another student in this school : {cacheItem.SchoolName} ");
+
 
 
 
@@ -213,8 +235,7 @@ namespace ExcelFileManagementDemo
                             rowCount++;
                         }
                     }
-                    currentSheet.AcceptChanges();
-                    
+                    currentSheet.AcceptChanges();                    
                 }
 
                 Console.WriteLine($"");
@@ -224,12 +245,18 @@ namespace ExcelFileManagementDemo
                     Console.WriteLine($" SSN : {item[FileHeaderDefinitions.StudentSSN] }, Name : {item[FileHeaderDefinitions.FirstName] } { item[FileHeaderDefinitions.LastName]}, Errors { item["Error"]}  ");
                 }
 
-
+                var hasErrors = $"Error IS NOT NULL";
+                return studentData.Tables[0].Select(hasErrors).Any();
             }
-            return false;
+            else
+            {
+                return false;
+            }
+
+            
         }
 
-        private string getStudentSSN(DataTable currentSheet, DataTableReader reader)
+        private string getStudentSSN(DataTable currentSheet, DataTableReader reader, StudentCacheDTO cacheItem, List<string> recordErrors)
         {
             string Student_SSN;
             if (reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.StudentSSN)))
@@ -242,6 +269,14 @@ namespace ExcelFileManagementDemo
                 {
                     Student_SSN = $"{random.Next(1, 999)}-{random.Next(1, 99)}-{random.Next(1, 9999)}";
                 }
+                // check that same Name,DOB and grade do not exist in the same school
+                //Grade condition
+                var gradeFilter = cacheItem.Grade != null ? "Grade = " + cacheItem.Grade : "Grade Is Null";
+                var duplicateStudentQuery = $"FirstName = '{cacheItem.FirstName}' AND LastName = '{cacheItem.LastName}' AND DOB = '{cacheItem.DOB}' AND {gradeFilter} AND SchoolCode = '{ cacheItem.SchoolCode }'";
+                var hasMultipleEntires = currentSheet.Select(duplicateStudentQuery).Count() > 1;
+                
+                if (hasMultipleEntires)
+                    recordErrors.Add($"Another student has the same record details in this school");
             }
             else
             {
@@ -260,8 +295,9 @@ namespace ExcelFileManagementDemo
             cacheItem.DOB = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.DOB)) ? (DateTime?) null : reader.GetDateTime(reader.GetOrdinal(FileHeaderDefinitions.DOB));
             cacheItem.SchoolCode = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.SchoolCode)) ? null : reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.SchoolCode));
             cacheItem.SchoolName = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.SchoolName)) ? null : reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.SchoolName));
-           // cacheItem.Grade = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.Grade)) ? (int?)null : reader.GetInt32(reader.GetOrdinal(FileHeaderDefinitions.Grade));
-           
+            cacheItem.Grade = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.Grade)) ? (double?)null : reader.GetDouble(reader.GetOrdinal(FileHeaderDefinitions.Grade));
+            cacheItem.StudentID = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.StudentID)) ? null : Convert.ToString(reader.GetValue(reader.GetOrdinal(FileHeaderDefinitions.StudentID)));
+
             return cacheItem;
         }
 
@@ -287,6 +323,11 @@ namespace ExcelFileManagementDemo
             {
                 recordErrors.Add($"Missing Date of Birth");
             }
+            if (reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.StudentID)))
+            {
+                recordErrors.Add($"Missing Student ID");
+            }
         }
+
     }
 }
