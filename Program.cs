@@ -21,7 +21,15 @@ namespace ExcelFileManagementDemo
            Console.WriteLine(fileStateInfo);
             if (status.success)
             {
-                manager.VerifyInputData();
+               var validationResult =  manager.ValidateInputFile();
+                if (validationResult.success)
+                {
+                    Console.WriteLine("The data is in the right format. ");
+                }
+                else
+                {
+                    Console.WriteLine("We encountered a problem with your CSV or the data is not in the correct form");
+                }
             }
             
 

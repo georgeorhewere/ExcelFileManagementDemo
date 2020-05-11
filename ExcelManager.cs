@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using excelProvider = Microsoft.Office.Interop.Excel;
 using System.Collections;
+using ExcelFileManagementDemo.Interface;
+using System.Data;
+using ExcelFileManagementDemo.Common;
 
 namespace ExcelFileManagementDemo
 {
-    public class ExcelManager
+    public class ExcelUpdateManager : IStudentWriter
     {
         excelProvider.Application xlApp = null;
         excelProvider.Workbooks workbooks = null;
@@ -20,29 +23,41 @@ namespace ExcelFileManagementDemo
 
 
 
-        public void OpenExcel(string excelFilePath)
+        public bool OpenExcel(string excelFilePath)
         {
-            if (!string.IsNullOrEmpty(excelFilePath))
+            bool fileState = false;
+            try
             {
-                workbookFilePath = excelFilePath;
-                xlApp = new excelProvider.Application();
-                workbooks = xlApp.Workbooks;
-                workbook = workbooks.Open(excelFilePath);
-                sheets = new Hashtable();
-                int count = 1;
-                // Storing worksheet names in Hashtable.
-                foreach (excelProvider.Worksheet sheet in workbook.Sheets)
+                if (!string.IsNullOrEmpty(excelFilePath))
                 {
-                    sheets[count] = sheet.Name;
-                    Console.WriteLine($"Sheet Name is  {sheets[count]}");
-                    count++;
+                    workbookFilePath = excelFilePath;
+                    xlApp = new excelProvider.Application();
+                    workbooks = xlApp.Workbooks;
+                    workbook = workbooks.Open(excelFilePath);
+                    sheets = new Hashtable();
+                    int count = 1;
+                    // Storing worksheet names in Hashtable.
+                    foreach (excelProvider.Worksheet sheet in workbook.Sheets)
+                    {
+                        sheets[count] = sheet.Name;
+                        Console.WriteLine($"Sheet Name is  {sheets[count]}");
+                        count++;
+                    }
+                    Console.WriteLine($"number of sheets is  {workbook.Sheets.Count}");
+                    
+                    fileState = true;
                 }
-                Console.WriteLine($"number of sheets is  {workbook.Sheets.Count}");
+                else
+                {
+                    Console.WriteLine($"File path is not valid.");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine($"File path is not valid.");
+                Console.WriteLine(ex.Message);
             }
+
+            return fileState;
         }
 
         private void closeWorkbook()
@@ -114,6 +129,18 @@ namespace ExcelFileManagementDemo
             }
 
             return new List<string>();
+        }
+
+        public void WriteErrorsToFile(DataSet dataset)
+        {
+            Console.WriteLine($"");
+            Console.WriteLine($"Cache Items");
+            foreach (DataRow item in dataset.Tables[0].Rows)
+            {
+                Console.WriteLine($"SSN : {item[FileHeaderDefinitions.StudentSSN] }, Name : {item[FileHeaderDefinitions.FirstName] } { item[FileHeaderDefinitions.LastName]}");
+                Console.WriteLine($"Errors { item["Error"]}  ");
+                Console.WriteLine($"");
+            }
         }
     }
 }

@@ -38,7 +38,7 @@ namespace ExcelFileManagementDemo
             ProcessStatus status = new ProcessStatus();
             try
             {
-                using (var stream = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite))
+                using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
                 {
                     using (var reader = ExcelReaderFactory.CreateReader(stream))
                     {
@@ -59,6 +59,7 @@ namespace ExcelFileManagementDemo
                             status.data = badSheets;
                         }
                     }
+                    
                 }
             }
             catch (Exception ex)
@@ -151,13 +152,27 @@ namespace ExcelFileManagementDemo
 
         }
 
-        public ProcessStatus VerifyInputData()
+        public ProcessStatus ValidateInputFile()
         {
             ProcessStatus status = new ProcessStatus();
             //check for duplicate SSN
-            status.success = HasFlaggedErrors();
+            var isInvalidInput = HasFlaggedErrors();
+            if (isInvalidInput)
+            {
+                //write to File 
+                ExcelUpdateManager writerManager = new ExcelUpdateManager();
+              
+                if (writerManager.OpenExcel(filePath))
+                {
+                    writerManager.WriteErrorsToFile(studentData);
 
-            // Check for Same First,Last, DOB and Grade in the same school
+                    writerManager.CloseExcel();
+                }
+
+            }
+
+            status.success = !(isInvalidInput);
+            
             return status;
         }
 
@@ -232,14 +247,7 @@ namespace ExcelFileManagementDemo
                     currentSheet.AcceptChanges();                    
                 }
 
-                Console.WriteLine($"");
-                Console.WriteLine($"Cache Items");
-                foreach (DataRow item in studentData.Tables[0].Rows)
-                {
-                    Console.WriteLine($"SSN : {item[FileHeaderDefinitions.StudentSSN] }, Name : {item[FileHeaderDefinitions.FirstName] } { item[FileHeaderDefinitions.LastName]}");
-                    Console.WriteLine($"Errors { item["Error"]}  ");
-                    Console.WriteLine($"");
-                }
+                
 
                 var hasErrors = $"Error IS NOT NULL";
                 return studentData.Tables[0].Select(hasErrors).Any();
