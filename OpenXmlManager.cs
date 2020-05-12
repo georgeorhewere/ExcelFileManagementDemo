@@ -23,74 +23,153 @@ namespace ExcelFileManagementDemo
                 WorkbookPart workbookPart = spreadsheetDocument.WorkbookPart;
                 IEnumerable<Sheet> sheets = spreadsheetDocument.WorkbookPart.Workbook.GetFirstChild<Sheets>().Elements<Sheet>();
                 string relationshipId = sheets.First().Id.Value;
-                WorksheetPart worksheetPart = (WorksheetPart)spreadsheetDocument.WorkbookPart.GetPartById(relationshipId);
+                WorksheetPart worksheetPart = InsertErrorWorksheet(workbookPart);
                 Worksheet workSheet = worksheetPart.Worksheet;
                 SheetData sheetData = workSheet.GetFirstChild<SheetData>();
                 IEnumerable<Row> rows = sheetData.Descendants<Row>();
                 List<string> columnNames = new List<string>();
 
-                Row headerRow = rows.ElementAt(0);
-                int errorColIndex = headerRow.Count();
+                //Row headerRow = rows.ElementAt(0);
+              // int errorColIndex = headerRow.Count();
                 WorkbookStylesPart styles = workbookPart.WorkbookStylesPart;
-                var errorStyle = SetErrorStyle(styles.Stylesheet);
 
-                // Set columns 
-                foreach (Cell cell in headerRow)
-                {
-                    columnNames.Add(getCellValue(workbookPart, cell));
-                    //Console.Write($"{} ");
-                }
-           
-
-                if(studentData.Tables[0].Columns.Contains("Error"))
-                {
-                   var newCell = AddRowText(workbookPart, headerRow,"Error");                    
-                   headerRow.InsertAt(newCell, errorColIndex);
-                }
-                Console.WriteLine();
-
-                //Write data to datatable 
-                var indexDiff = 2;
+                //Write Dataset
                 var dataTable = studentData.Tables[0];
-                foreach (Row row in rows.Skip(1))
-                {
-                 
-                    var rowIndex = Convert.ToInt32(row.RowIndex.ToString()) - indexDiff;
-                    var errorText= dataTable.Rows[rowIndex].Field<string>("Error");
+                
 
-                    var newRowCell = AddRowText(workbookPart, row, errorText);
-                    // newRowCell.StyleIndex = errorStyle;
-                    if (row.Count() < errorColIndex)
+
+
+                //var errorStyle = SetErrorStyle(styles.Stylesheet);
+
+                //// Set columns 
+                //foreach (Cell cell in headerRow)
+                //{
+                //    columnNames.Add(getCellValue(workbookPart, cell));
+                //    //Console.Write($"{} ");
+                //}
+
+
+                if(dataTable.Columns.Contains("Error"))
+                {
+                    var columnList = new List<string> { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" };
+                    //add header column
+                    var headerRow = AddRowToErrorSheet(sheetData);
+                    foreach (DataColumn column in dataTable.Columns)
                     {
-                        Console.WriteLine($"Add cells between { row.Count() } to {errorColIndex}");
-                        for(int x = row.Count(); x <= errorColIndex; x++)
+                        var cellReference = columnList[column.Ordinal] + headerRow.RowIndex;
+                        // If there is not a cell with the specified column name, insert one.                          
+
+                        // Cells must be in sequential order according to CellReference. Determine where to insert the new cell.
+                        Cell refCell = null;
+                        foreach (Cell cell in headerRow.Elements<Cell>())
                         {
-                            Cell emptyCell = new Cell() { CellReference = row.RowIndex.ToString(), CellValue = new CellValue()
-                            };
-                            row.InsertAt(emptyCell, x);                            
+                            if (cell.CellReference.Value.Length == cellReference.Length)
+                            {
+                                if (string.Compare(cell.CellReference.Value, cellReference, true) > 0)
+                                {
+                                    refCell = cell;
+                                    break;
+                                }
+                            }
+                        }
+
+                        var newRowCell = AddRowText(workbookPart, headerRow, column.ColumnName);
+                        newRowCell.CellReference = cellReference;
+                        headerRow.InsertBefore(newRowCell, refCell);
+                    }
+
+                    foreach (DataRow errorRow in dataTable.Rows)
+                    {
+                        var row = AddRowToErrorSheet(sheetData);
+                        foreach (DataColumn column in dataTable.Columns)
+                        {
+                            var cellReference = columnList[column.Ordinal] + row.RowIndex;
+                            // If there is not a cell with the specified column name, insert one.                          
+                            
+                                // Cells must be in sequential order according to CellReference. Determine where to insert the new cell.
+                                Cell refCell = null;
+                                foreach (Cell cell in row.Elements<Cell>())
+                                {
+                                    if (cell.CellReference.Value.Length == cellReference.Length)
+                                    {
+                                        if (string.Compare(cell.CellReference.Value, cellReference, true) > 0)
+                                        {
+                                            refCell = cell;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                               var newRowCell = AddRowText(workbookPart, row, errorRow[column.ColumnName].ToString());
+                                newRowCell.CellReference = cellReference;
+                                row.InsertBefore(newRowCell, refCell);
                         }
 
                     }
 
-                    if (row.ElementAt(errorColIndex) != null)
-                    {
-                        var existingCell = row.Descendants<Cell>().ElementAt(errorColIndex);
-                        existingCell.CellValue.Text = newRowCell.CellValue.InnerText;
-                        existingCell.DataType = newRowCell.DataType;
-                       // existingCell.StyleIndex = errorStyle;
-                    }
-                    else
-                    {
-                        row.InsertAt(newRowCell, errorColIndex);
-                    }
-
-                    Console.WriteLine(row.Count());
                 }
+                Console.WriteLine();
 
-              //  workSheet.Save();
+                //Write data to datatable 
+                //var indexDiff = 2;
+                //var dataTable = studentData.Tables[0];
+                //foreach (Row row in rows.Skip(1))
+                //{
+
+                //    var rowIndex = Convert.ToInt32(row.RowIndex.ToString()) - indexDiff;
+                //    var errorText= dataTable.Rows[rowIndex].Field<string>("Error");
+
+                //    var newRowCell = AddRowText(workbookPart, row, errorText);
+                //    // newRowCell.StyleIndex = errorStyle;
+                //    if (row.Count() < errorColIndex)
+                //    {
+                //        Console.WriteLine($"Add cells between { row.Count() } to {errorColIndex}");
+                //        for(int x = row.Count(); x <= errorColIndex; x++)
+                //        {
+                //            Cell emptyCell = new Cell() { CellReference = row.RowIndex.ToString(), CellValue = new CellValue()};
+                //            row.InsertAt(emptyCell, x);                            
+                //        }
+
+                //    }
+
+                //    if (row.ElementAt(errorColIndex) != null)
+                //    {
+                //        var existingCell = row.Descendants<Cell>().ElementAt(errorColIndex);
+                //        existingCell.CellValue.Text = newRowCell.CellValue.InnerText;
+                //        existingCell.DataType = newRowCell.DataType;
+                //       // existingCell.StyleIndex = errorStyle;
+                //    }
+                //    else
+                //    {
+                //        row.InsertAt(newRowCell, errorColIndex);
+                //    }
+
+                //    Console.WriteLine(row.Count());
+                //}
+
+                 workSheet.Save();
             }
 
 
+        }
+
+        private Row AddRowToErrorSheet(SheetData sheetData)
+        {
+            var rowIndex = sheetData.Elements<Row>().Count() + 1;
+            Row row;
+
+            if (sheetData.Elements<Row>().Where(r => r.RowIndex == rowIndex).Count() != 0)
+            {
+                row = sheetData.Elements<Row>().Where(r => r.RowIndex == rowIndex).First();
+            }
+            else
+            {
+                row = new Row() { RowIndex = Convert.ToUInt32(rowIndex) };
+             //   sheetData.Append(row);
+            }
+            sheetData.Append(row);
+
+            return row;
         }
 
         private Cell AddRowText(WorkbookPart workbookPart, Row headerRow,string rowText)
@@ -161,6 +240,81 @@ namespace ExcelFileManagementDemo
             stylesheet.Save();
 
             return stylesheet.CellFormats.Count;
+        }
+
+        // Inserts a new worksheet for error.
+        private static WorksheetPart InsertErrorWorksheet(WorkbookPart workbookPart)
+        {
+            // Add a new worksheet part to the workbook.
+            WorksheetPart errorWorksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+            errorWorksheetPart.Worksheet = new Worksheet(new SheetData());
+            errorWorksheetPart.Worksheet.Save();
+
+            Sheets sheets = workbookPart.Workbook.GetFirstChild<Sheets>();
+            string relationshipId = workbookPart.GetIdOfPart(errorWorksheetPart);
+
+            // Get a unique ID for the new sheet.
+            uint sheetId = 1;
+            if (sheets.Elements<Sheet>().Count() > 0)
+            {
+                sheetId = sheets.Elements<Sheet>().Select(s => s.SheetId.Value).Max() + 1;
+            }
+
+            string sheetName = $"StudentImportErrors{DateTime.Now.Date.Day}{DateTime.Now.Date.Month}{DateTime.Now.Date.Year}{DateTime.Now.Hour}{DateTime.Now.Millisecond}";
+
+            // Append the new worksheet and associate it with the workbook.
+            Sheet sheet = new Sheet() { Id = relationshipId, SheetId = sheetId, Name = sheetName };
+            sheets.Append(sheet);
+            workbookPart.Workbook.Save();
+
+            return errorWorksheetPart;
+        }
+
+        private static Cell InsertCellInWorksheet(string columnName, uint rowIndex, WorksheetPart worksheetPart)
+        {
+            Worksheet worksheet = worksheetPart.Worksheet;
+            SheetData sheetData = worksheet.GetFirstChild<SheetData>();
+            string cellReference = columnName + rowIndex;
+
+            // If the worksheet does not contain a row with the specified row index, insert one.
+            Row row;
+            if (sheetData.Elements<Row>().Where(r => r.RowIndex == rowIndex).Count() != 0)
+            {
+                row = sheetData.Elements<Row>().Where(r => r.RowIndex == rowIndex).First();
+            }
+            else
+            {
+                row = new Row() { RowIndex = rowIndex };
+                sheetData.Append(row);
+            }
+
+            // If there is not a cell with the specified column name, insert one.  
+            if (row.Elements<Cell>().Where(c => c.CellReference.Value == columnName + rowIndex).Count() > 0)
+            {
+                return row.Elements<Cell>().Where(c => c.CellReference.Value == cellReference).First();
+            }
+            else
+            {
+                // Cells must be in sequential order according to CellReference. Determine where to insert the new cell.
+                Cell refCell = null;
+                foreach (Cell cell in row.Elements<Cell>())
+                {
+                    if (cell.CellReference.Value.Length == cellReference.Length)
+                    {
+                        if (string.Compare(cell.CellReference.Value, cellReference, true) > 0)
+                        {
+                            refCell = cell;
+                            break;
+                        }
+                    }
+                }
+
+                Cell newCell = new Cell() { CellReference = cellReference };
+                row.InsertBefore(newCell, refCell);
+
+                worksheet.Save();
+                return newCell;
+            }
         }
     }
 }
