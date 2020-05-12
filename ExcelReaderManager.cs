@@ -161,13 +161,18 @@ namespace ExcelFileManagementDemo
             {
                 //write to File 
                 ExcelUpdateManager writerManager = new ExcelUpdateManager();
-              
-                if (writerManager.OpenExcel(filePath))
-                {
-                    writerManager.WriteErrorsToFile(studentData);
+                Console.WriteLine(studentData.Tables[0].Columns.Count);
+                var xlManager = new OpenXmlManager();
+                xlManager.openWorkBook(filePath, studentData);
 
-                    writerManager.CloseExcel();
-                }
+
+                //if (writerManager.OpenExcel(filePath))
+                //{
+                  
+                //        //writerManager.WriteErrorsToFile(studentData);
+
+                //    //writerManager.CloseExcel();
+                //}
 
             }
 

@@ -15,22 +15,27 @@ namespace ExcelFileManagementDemo
 
             IStudentReader manager = new ExcelReaderManager();
             var status = manager.OpenDataFeed(inputFile);
-            //ExcelManager manager = new ExcelManager();
-            //manager.OpenExcel(inputFile);
-           var fileStateInfo = $"Status: { status.success } Message:{ status.message }";
-           Console.WriteLine(fileStateInfo);
-            if (status.success)
-            {
-               var validationResult =  manager.ValidateInputFile();
-                if (validationResult.success)
-                {
-                    Console.WriteLine("The data is in the right format. ");
-                }
-                else
-                {
-                    Console.WriteLine("We encountered a problem with your CSV or the data is not in the correct form");
-                }
-            }
+
+            //ExcelReaderManager manager = new ExcelReaderManager();
+           //manager.OpenExcel(inputFile);
+           var fileStateInfo = manager.ValidateInputFile();
+            //Console.WriteLine(fileStateInfo);
+            // if (status.success)
+            // {
+            //    var validationResult =  manager.ValidateInputFile();
+            //     if (validationResult.success)
+            //     {
+            //         Console.WriteLine("The data is in the right format. ");
+            //     }
+            //     else
+            //     {
+            //         Console.WriteLine("We encountered a problem with your CSV or the data is not in the correct form");
+            //     }
+            // }
+
+            var xlManager = new OpenXmlManager();
+            //xlManager.openWorkBook(inputFile);
+
             
 
             Console.ReadLine();
