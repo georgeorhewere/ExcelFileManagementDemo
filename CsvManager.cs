@@ -14,7 +14,7 @@ namespace ExcelFileManagementDemo
         {
             List<String> lines = new List<String>();
 
-            if (File.Exists(filePath)) ;
+            if (File.Exists(filePath))
             {
                 using (StreamReader reader = new StreamReader(filePath))
                 {
@@ -25,7 +25,7 @@ namespace ExcelFileManagementDemo
 
                     while ((line = reader.ReadLine()) != null)
                     {
-                        lines.Add(line);
+                      
                         //if (line.Contains(","))
                         //{
                         //    //String[] split = line.Split(',');
@@ -41,15 +41,15 @@ namespace ExcelFileManagementDemo
                     }
                 }
 
-                using (StreamWriter writer = new StreamWriter(filePath, false))
-                {
-                    foreach (String line in lines)
-                        writer.WriteLine(line);
-                }
-                //foreach (var item in lines)
+                //using (StreamWriter writer = new StreamWriter(filePath, false))
                 //{
-                //    Console.WriteLine(item);
+                //    foreach (String line in lines)
+                //        writer.WriteLine(line);
                 //}
+                foreach (var item in lines)
+                {
+                    Console.WriteLine(item);
+                }
             }
         }
     }
