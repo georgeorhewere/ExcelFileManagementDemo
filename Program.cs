@@ -11,14 +11,16 @@ namespace ExcelFileManagementDemo
     {
         static void Main(string[] args)
         {
-            string inputFile = "F:/Projects/Test Files/StudentData.xlsx";
+            //string inputFile = "F:/Projects/Test Files/StudentData.xlsx";
+            string CsvInputFile = "F:/Projects/Test Files/SampleStudentInformation.csv";
+            CsvManager.AppendErrorsToLine(CsvInputFile);
 
-            IStudentReader manager = new ExcelReaderManager();
-            var status = manager.OpenDataFeed(inputFile);
+            // IStudentReader manager = new ExcelReaderManager();
+            //var status = manager.OpenDataFeed(inputFile);
 
             //ExcelReaderManager manager = new ExcelReaderManager();
-           //manager.OpenExcel(inputFile);
-           var fileStateInfo = manager.ValidateInputFile();
+            //manager.OpenExcel(inputFile);
+            // var fileStateInfo = manager.ValidateInputFile();
             //Console.WriteLine(fileStateInfo);
             // if (status.success)
             // {
@@ -33,10 +35,10 @@ namespace ExcelFileManagementDemo
             //     }
             // }
 
-            var xlManager = new OpenXmlManager();
+            //var xlManager = new OpenXmlManager();
             //xlManager.openWorkBook(inputFile);
 
-            
+
 
             Console.ReadLine();
         }

@@ -69,6 +69,7 @@
     <Compile Include="Common\FileHeaderDefinitions.cs" />
     <Compile Include="Common\ProcessStatus.cs" />
     <Compile Include="Common\StudentCacheDTO.cs" />
+    <Compile Include="CsvManager.cs" />
     <Compile Include="ExcelManager.cs" />
     <Compile Include="ExcelReaderManager.cs" />
     <Compile Include="Interface\IStudentReader.cs" />
