@@ -12,7 +12,7 @@ namespace ExcelFileManagementDemo
         static void Main(string[] args)
         {
             //string inputFile = "F:/Projects/Test Files/StudentData.xlsx";
-            string CsvInputFile = "F:/Projects/Test Files/SampleStudentInformation.csv";
+            string CsvInputFile = "F:/Projects/Test Files/StudentCSV.csv";
             CsvManager.AppendErrorsToLine(CsvInputFile);
 
             // IStudentReader manager = new ExcelReaderManager();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ExcelFileManagementDemo
@@ -20,15 +21,15 @@ namespace ExcelFileManagementDemo
                 {
                     String line;
                     StringBuilder headerLine = new StringBuilder(reader.ReadLine());
-                    headerLine.Append(",Errors");
-                    lines.Add(headerLine.ToString());
+                   // headerLine.Append(",Errors");
+                    //lines.Add(headerLine.ToString());
 
                     while ((line = reader.ReadLine()) != null)
                     {
                       
                         //if (line.Contains(","))
                         //{
-                        //    //String[] split = line.Split(',');
+                        String[] split = SplitCSV(line).ToArray();
 
                         //    //if (split[1].Contains("34"))
                         //    //{
@@ -46,10 +47,21 @@ namespace ExcelFileManagementDemo
                 //    foreach (String line in lines)
                 //        writer.WriteLine(line);
                 //}
-                foreach (var item in lines)
-                {
-                    Console.WriteLine(item);
-                }
+                //foreach (var item in lines)
+                //{
+                //    Console.WriteLine(item);
+                //}
+            }
+        }
+
+
+        public static IEnumerable<string> SplitCSV(string input)
+        {
+            Regex csvSplit = new Regex("(?:^|,)(\"(?:[^\"]+|\"\")*\"|[^,]*)", RegexOptions.Compiled);
+
+            foreach (Match match in csvSplit.Matches(input))
+            {
+                yield return match.Value.TrimStart(',');
             }
         }
     }
