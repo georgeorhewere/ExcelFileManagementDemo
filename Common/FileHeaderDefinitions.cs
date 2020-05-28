@@ -11,6 +11,7 @@ namespace ExcelFileManagementDemo.Common
 
         public static string StudentSSN = "Student SSN";
         public static string FirstName = "FirstName";
+        public static string MiddleNameDesc = "MiddleName";
         public static string LastName = "LastName";
         public static string SchoolCode = "SchoolCode";
         public static string SchoolName = "SchoolName";
@@ -23,12 +24,13 @@ namespace ExcelFileManagementDemo.Common
         private static List<string> columnDefinitions = new List<string> { SchoolCode,
                                                                             SchoolName,
                                                                             FirstName,
+                                                                            MiddleNameDesc,
                                                                             LastName,
                                                                             DOB,
                                                                             Grade,
                                                                             Gender,
                                                                             StudentID,
-                                                                             StudentSSN,
+                                                                            StudentSSN,
                                                                             Internal_ID,
                                                                             };
 

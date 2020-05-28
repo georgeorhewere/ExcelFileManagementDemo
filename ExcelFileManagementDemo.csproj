@@ -75,6 +75,7 @@
     <Compile Include="Interface\IStudentReader.cs" />
     <Compile Include="Interface\IStudentWriter.cs" />
     <Compile Include="OpenXmlManager.cs" />
+    <Compile Include="OpenXmlWriterManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

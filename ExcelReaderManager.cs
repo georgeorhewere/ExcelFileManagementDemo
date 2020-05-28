@@ -86,7 +86,7 @@ namespace ExcelFileManagementDemo
 
                 for (int col = 0; col < columnCount; col++)
                 {
-                    if (!FileHeaderDefinitions.ColumnDefinitions().Contains(sheetColumns[col].ColumnName))
+                    if (!FileHeaderDefinitions.ColumnDefinitions().Contains(sheetColumns[col].ColumnName.Replace(" ",string.Empty)))
                     {
                         badColumns.Add(sheetColumns[col].ColumnName);
                         hasValidCoumnSet = false;
@@ -157,13 +157,17 @@ namespace ExcelFileManagementDemo
             ProcessStatus status = new ProcessStatus();
             //check for duplicate SSN
             var isInvalidInput = HasFlaggedErrors();
-            if (isInvalidInput)
-            {
+           // if (isInvalidInput)
+           //{
                 //write to File 
-                ExcelUpdateManager writerManager = new ExcelUpdateManager();
-                Console.WriteLine(studentData.Tables[0].Columns.Count);
-                var xlManager = new OpenXmlManager();
-                xlManager.openWorkBook(filePath, studentData);
+                // ExcelUpdateManager writerManager = new ExcelUpdateManager();
+                // Console.WriteLine(studentData.Tables[0].Columns.Count);
+                // var xlManager = new OpenXmlManager();
+                // xlManager.openWorkBook(filePath, studentData);
+                var updateManager = new OpenXmlWriterManager();
+                updateManager.writeDataSetToSheet(filePath, studentData);
+
+
 
 
                 //if (writerManager.OpenExcel(filePath))
@@ -174,7 +178,7 @@ namespace ExcelFileManagementDemo
                 //    //writerManager.CloseExcel();
                 //}
 
-            }
+          //  }
 
             status.success = !(isInvalidInput);
             
@@ -301,7 +305,9 @@ namespace ExcelFileManagementDemo
 
             cacheItem.FirstName = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.FirstName)) ? null : reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.FirstName));
             cacheItem.LastName = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.LastName)) ? null : reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.LastName));
-            cacheItem.DOB = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.DOB)) ? (DateTime?) null : reader.GetDateTime(reader.GetOrdinal(FileHeaderDefinitions.DOB));
+            var dateTime = reader.GetDateTime(reader.GetOrdinal(FileHeaderDefinitions.DOB));
+            cacheItem.DOB = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.DOB)) ? (DateTime?) null : dateTime;
+
             cacheItem.SchoolCode = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.SchoolCode)) ? null : reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.SchoolCode));
             cacheItem.SchoolName = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.SchoolName)) ? null : reader.GetString(reader.GetOrdinal(FileHeaderDefinitions.SchoolName));
             cacheItem.Grade = reader.IsDBNull(reader.GetOrdinal(FileHeaderDefinitions.Grade)) ? (double?)null : reader.GetDouble(reader.GetOrdinal(FileHeaderDefinitions.Grade));

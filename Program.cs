@@ -11,16 +11,17 @@ namespace ExcelFileManagementDemo
     {
         static void Main(string[] args)
         {
-            //string inputFile = "F:/Projects/Test Files/StudentData.xlsx";
-            string CsvInputFile = "F:/Projects/Test Files/StudentCSV.csv";
-            CsvManager.AppendErrorsToLine(CsvInputFile);
+            string inputFile = "H:/Alpha/TestFiles/StudentDataNameTest.xlsx";
+            //string CsvInputFile = "F:/Projects/Test Files/StudentCSV.csv";
+            //CsvManager.AppendErrorsToLine(CsvInputFile);
 
-            // IStudentReader manager = new ExcelReaderManager();
-            //var status = manager.OpenDataFeed(inputFile);
+             IStudentReader manager = new ExcelReaderManager();
+             var status = manager.OpenDataFeed(inputFile);
+            Console.WriteLine(status.message);
 
-            //ExcelReaderManager manager = new ExcelReaderManager();
-            //manager.OpenExcel(inputFile);
-            // var fileStateInfo = manager.ValidateInputFile();
+           // ExcelReaderManager manager = new ExcelReaderManager();
+            /// manager.OpenExcel(inputFile);
+             var fileStateInfo = manager.ValidateInputFile();
             //Console.WriteLine(fileStateInfo);
             // if (status.success)
             // {
