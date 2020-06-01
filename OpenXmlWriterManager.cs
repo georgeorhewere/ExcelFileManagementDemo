@@ -2,6 +2,7 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using ExcelFileManagementDemo.Common;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -13,12 +14,17 @@ namespace ExcelFileManagementDemo
 {
     public class OpenXmlWriterManager
     {
+        IMemoryCache memoryCache;
 
         // open workbook
         //add new worksheet
         // write headers
         //write data
         // ssnupdate cells
+        public OpenXmlWriterManager(IMemoryCache _memoryCache)
+        {
+            memoryCache = _memoryCache;
+        }
 
 
         public void writeDataSetToSheet(string fileName, DataSet dataSet)

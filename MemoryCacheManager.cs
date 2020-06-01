@@ -1,14 +1,15 @@
-﻿
+﻿using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using Microsoft.Extensions.Caching.Memory;
+using System.Linq;
 
-namespace ExcelManagerLibrary
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ExcelFileManagementDemo
 {
     public sealed class MemoryCacheManager
     {
         public static IMemoryCache MemoryCache { get; } = new MemoryCache(new MemoryCacheOptions());
-
     }
 }

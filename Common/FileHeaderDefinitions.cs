@@ -9,7 +9,7 @@ namespace ExcelFileManagementDemo.Common
     public class FileHeaderDefinitions
     {
 
-        public static string StudentSSN = "Student SSN";
+        public static string StudentSSN = "StudentSSN";
         public static string FirstName = "FirstName";
         public static string MiddleNameDesc = "MiddleName";
         public static string LastName = "LastName";

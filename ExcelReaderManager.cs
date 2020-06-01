@@ -1,6 +1,7 @@
 ﻿using ExcelDataReader;
 using ExcelFileManagementDemo.Common;
 using ExcelFileManagementDemo.Interface;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,18 +18,37 @@ namespace ExcelFileManagementDemo
         private string filePath;
         private DataSet studentData;
         private Hashtable schoolCache;
+        IMemoryCache memoryCache;
 
-        public ExcelReaderManager()
+        public ExcelReaderManager(IMemoryCache _memoryCache)
         {
+            memoryCache = _memoryCache;
             schoolCache = new Hashtable();
+
         }
 
         public ProcessStatus OpenDataFeed(string connection)
         {
-            ProcessStatus status;            
+            ProcessStatus status = new ProcessStatus();            
             filePath = connection;
-            
-            status = OpenExcelWorkBook();
+
+            var fileInfo = new FileInfo(connection);
+            if (fileInfo.Exists)
+            {
+                using (FileStream fileStream = File.OpenRead(filePath))
+                {
+                    MemoryStream memStream = new MemoryStream();
+                    memStream.SetLength(fileStream.Length);
+                    fileStream.Read(memStream.GetBuffer(), 0, (int)fileStream.Length);
+                    memoryCache.Set(fileInfo.Name, memStream, TimeSpan.FromMinutes(30));
+                }
+
+                status = OpenExcelWorkBook();
+            }
+            else
+            {
+                status.message = $"File does not exist {fileInfo.Name}";
+            }
             
             return status;
         }
@@ -38,9 +58,9 @@ namespace ExcelFileManagementDemo
             ProcessStatus status = new ProcessStatus();
             try
             {
-                using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
-                {
-                    using (var reader = ExcelReaderFactory.CreateReader(stream))
+                var stream = (MemoryStream)memoryCache.Get(new FileInfo(filePath).Name);
+
+                using (var reader = ExcelReaderFactory.CreateReader(stream))
                     {
                         // Use the AsDataSet extension method
                         studentData = reader.AsDataSet(GetExcelDataSetConfig());                       
@@ -59,8 +79,7 @@ namespace ExcelFileManagementDemo
                             status.data = badSheets;
                         }
                     }
-                    
-                }
+            
             }
             catch (Exception ex)
             {
